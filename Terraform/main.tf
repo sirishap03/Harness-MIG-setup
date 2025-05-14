@@ -54,19 +54,23 @@ resource "google_compute_health_check" "default" {
   }
 }
 
-resource "google_compute_autoscaler" "default" {
-  name   = "apache-autoscaler"
+resource "google_compute_region_autoscaler" "default" {
+  name   = "mig-autoscaler"
   region = var.region
+
   target = google_compute_region_instance_group_manager.default.id
 
   autoscaling_policy {
     max_replicas    = 5
     min_replicas    = 2
+    cooldown_period = 60
+
     cpu_utilization {
       target = 0.6
     }
   }
 }
+
 
 resource "google_compute_backend_service" "default" {
   name                            = "apache-backend-service"
