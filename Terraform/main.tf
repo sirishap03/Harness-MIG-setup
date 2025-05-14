@@ -1,32 +1,55 @@
-provider "google"  {              #mentioning the provider
-     project_id = " "
-     region     = "us-east-1"
-     zone       = "  "
+# main.tf
+provider "google" {
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
 }
 
-resource "google_cloud_instance_template" "default"  {     # creation of template for MIG setup
-     name_prefix   = mig-server
-     instance_type = e2.medium
-     
-     tags = [apache_server]
+resource "google_compute_instance_template" "default" {
+  name_prefix = "apache-template"
+  machine_type = "e2-medium"
 
-     disk {
-       source_image = "debian-cloud/debian-11"          #source image debain 11 from debian cloud which is  a public image
-       delete       = true                              #whenever the vm deletes, disk should also deleted
-       boot         = true                              #re-boot  whenever the application requires
-     }
+  tags = ["http-server"]
 
-     network_interface {
-       network       = "default"                       #taking up default vpc
-       access_config {}                                # enable the public access for ip
-     } 
-     
+  disk {
+    source_image = "debian-cloud/debian-11"
+    auto_delete  = true
+    boot         = true
+  }
 
-      metadata_startup_script = <<-EOT                  #metadata for installing apache on the multiple instances
-           sudo apt update
-           sudo apt install -y apache2
-           sudo systemctl enable apache2
-           sudo systemctl start apache2
-           EOT
-      }
-     
+  network_interface {
+    network = "default"
+    access_config {}
+  }
+
+  metadata_startup_script = <<-EOT
+    sudo apt update
+    sudo apt install -y apache2
+    sudo systemctl enable apache2
+    sudo systemctl start apache2
+  EOT
+}
+
+resource "google_compute_region_instance_group_manager" "default" {
+  name               = "apache-mig"
+  base_instance_name = "apache-instance"
+  region             = var.region
+  version {
+    instance_template = google_compute_instance_template.default.id
+  }
+
+  target_size = 2  # Start with 2 instances
+  auto_healing_policies {
+    health_check      = google_compute_health_check.default.id
+    initial_delay_sec = 300
+  }
+}
+
+resource "google_compute_health_check" "default" {
+  name               = "apache-health-check"
+  check_interval_sec = 10
+  timeout_sec        = 5
+  http_health_check {
+    port = 80
+  }
+}
