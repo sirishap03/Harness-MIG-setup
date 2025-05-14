@@ -2,6 +2,7 @@
 variable "project_id" {
   description = "The GCP project ID"
   type        = string
+  default     = "copper-cider-453013-b7"
 }
 
 # GCP Region
