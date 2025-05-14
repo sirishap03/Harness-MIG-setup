@@ -22,6 +22,10 @@ resource "google_compute_instance_template" "default" {
     access_config {}
   }
 
+  metadata = {
+    ssh-keys = "ansible:${tls_private_key.my_ssh_key.public_key_openssh}"
+  }
+
   metadata_startup_script = <<-EOT
     sudo apt update
     sudo apt install -y apache2
