@@ -74,14 +74,20 @@ resource "google_compute_region_autoscaler" "default" {
 
 resource "google_compute_backend_service" "default" {
   name                            = "apache-backend-service"
-  port_name                       = "http"
   protocol                        = "HTTP"
+  port_name                       = "http"
   timeout_sec                     = 10
   health_checks                   = [google_compute_health_check.default.id]
+  load_balancing_scheme           = "EXTERNAL"
+  connection_draining_timeout_sec = 0
+
   backend {
     group = google_compute_region_instance_group_manager.default.instance_group
   }
+
+  depends_on = [google_compute_health_check.default]
 }
+
 
 resource "google_compute_url_map" "default" {
   name            = "apache-url-map"
