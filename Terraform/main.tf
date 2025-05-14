@@ -53,3 +53,47 @@ resource "google_compute_health_check" "default" {
     port = 80
   }
 }
+
+resource "google_compute_autoscaler" "default" {
+  name   = "apache-autoscaler"
+  region = var.region
+  target = google_compute_region_instance_group_manager.default.id
+
+  autoscaling_policy {
+    max_replicas    = 5
+    min_replicas    = 2
+    cpu_utilization {
+      target = 0.6
+    }
+  }
+}
+
+resource "google_compute_backend_service" "default" {
+  name                            = "apache-backend-service"
+  port_name                       = "http"
+  protocol                        = "HTTP"
+  timeout_sec                     = 10
+  health_checks                   = [google_compute_health_check.default.id]
+  backend {
+    group = google_compute_region_instance_group_manager.default.instance_group
+  }
+}
+
+resource "google_compute_url_map" "default" {
+  name            = "apache-url-map"
+  default_service = google_compute_backend_service.default.id
+}
+
+resource "google_compute_target_http_proxy" "default" {
+  name   = "apache-http-proxy"
+  url_map = google_compute_url_map.default.id
+}
+
+resource "google_compute_global_forwarding_rule" "default" {
+  name                  = "apache-forwarding-rule"
+  target                = google_compute_target_http_proxy.default.id
+  port_range            = "80"
+  load_balancing_scheme = "EXTERNAL"
+  ip_protocol           = "TCP"
+}
+
