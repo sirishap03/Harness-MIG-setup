@@ -1,0 +1,16 @@
+# apache-install.yml
+- name: Install Apache
+  hosts: apache_nodes
+  become: true
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Ensure Apache is running
+      service:
+        name: apache2
+        state: started
+        enabled: true
