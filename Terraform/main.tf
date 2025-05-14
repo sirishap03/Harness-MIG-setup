@@ -5,6 +5,11 @@ provider "google" {
   zone    = var.zone
 }
 
+resource "tls_private_key" "my_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
 resource "google_compute_instance_template" "default" {
   name_prefix = "apache-template"
   machine_type = "e2-medium"
