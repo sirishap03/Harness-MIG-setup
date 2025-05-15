@@ -45,12 +45,6 @@ resource "google_compute_health_check" "default" {
   }
 }
 
-# Optional workaround: add a delay to ensure health check is ready
-# resource "time_sleep" "wait_for_health_check" {
-#   depends_on      = [google_compute_health_check.default]
-#   create_duration = "20s"
-# }
-
 resource "google_compute_region_instance_group_manager" "default" {
   name               = "apache-mig"
   base_instance_name = "apache-instance"
@@ -97,11 +91,6 @@ resource "google_compute_backend_service" "default" {
   backend {
     group = google_compute_region_instance_group_manager.default.instance_group
   }
-
-  depends_on = [
-    google_compute_health_check.default
-    # , time_sleep.wait_for_health_check # Uncomment this line if you enable time_sleep
-  ]
 }
 
 resource "google_compute_url_map" "default" {
