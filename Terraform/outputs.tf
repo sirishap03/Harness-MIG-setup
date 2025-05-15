@@ -1,19 +1,12 @@
-output "instance_group_name" {
-  description = "The name of the managed instance group"
-  value       = google_compute_region_instance_group_manager.default.name
+output "instance_group" {
+  value = google_compute_region_instance_group_manager.default.instance_group
 }
 
-output "backend_service_name" {
-  description = "The backend service used for load balancing"
-  value       = google_compute_backend_service.default.name
+output "ssh_private_key_pem" {
+  value     = tls_private_key.my_ssh_key.private_key_pem
+  sensitive = true
 }
 
-output "load_balancer_ip" {
-  description = "The external IP address of the Load Balancer"
-  value       = google_compute_global_forwarding_rule.default.ip_address
+output "ssh_public_key_openssh" {
+  value = tls_private_key.my_ssh_key.public_key_openssh
 }
-
-output "vm_ip" {
-  value = google_compute_instance.default.network_interface[0].access_config[0].nat_ip
-}
-
