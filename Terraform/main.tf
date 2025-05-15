@@ -9,6 +9,28 @@ resource "tls_private_key" "my_ssh_key" {
   rsa_bits  = 4096
 }
 
+resource "google_compute_instance" "default" {
+  name         = "ansible-vm"
+  machine_type = "e2-medium"
+  zone         = "us-central1-a"
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+    }
+  }
+
+  network_interface {
+    network = "default"
+
+    access_config {}  # This enables external IP
+  }
+
+  metadata = {
+    ssh-keys = "ansible:${file("~/.ssh/id_rsa.pub")}"
+  }
+}
+
 resource "google_compute_instance_template" "default" {
   name_prefix  = "apache-template"
   machine_type = "e2-medium"
