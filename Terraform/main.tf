@@ -22,14 +22,14 @@ resource "google_compute_instance" "default" {
 
   network_interface {
     network = "default"
-
-    access_config {}  # This enables external IP
+    access_config {}
   }
 
   metadata = {
-    ssh-keys = "ansible:${file("~/.ssh/id_rsa.pub")}"
+    ssh-keys = "ansible:${file("${path.module}/id_rsa.pub")}"
   }
 }
+
 
 resource "google_compute_instance_template" "default" {
   name_prefix  = "apache-template"
