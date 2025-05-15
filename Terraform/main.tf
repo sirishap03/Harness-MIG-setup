@@ -29,6 +29,10 @@ resource "google_compute_instance_template" "default" {
   metadata = {
     ssh-keys = "ansible:${tls_private_key.my_ssh_key.public_key_openssh}"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "google_compute_health_check" "default" {
