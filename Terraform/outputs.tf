@@ -10,3 +10,7 @@ output "ssh_private_key_pem" {
 output "ssh_public_key_openssh" {
   value = tls_private_key.my_ssh_key.public_key_openssh
 }
+
+output "load_balancer_ip" {
+  value = google_compute_global_forwarding_rule.default.ip_address
+}
