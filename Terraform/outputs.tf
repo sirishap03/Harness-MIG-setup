@@ -12,3 +12,7 @@ output "load_balancer_ip" {
   description = "The external IP address of the Load Balancer"
   value       = google_compute_global_forwarding_rule.default.ip_address
 }
+
+output "vm_ip" {
+  value = google_compute_instance.default.network_interface[0].access_config[0].nat_ip
+}
