@@ -57,6 +57,16 @@ resource "google_compute_autoscaler" "apache_autoscaler" {
   }
 }
 
+
+resource "google_compute_instance_template" "default" {
+  name         = "example-template"
+  machine_type = "e2-medium"
+  project      = var.project_id
+  region       = var.region
+  ...
+}
+
+
 resource "google_compute_health_check" "apache_check" {
   name               = "apache-health-check"
   check_interval_sec = 5
