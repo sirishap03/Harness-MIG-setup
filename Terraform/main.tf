@@ -4,72 +4,51 @@ provider "google" {
   zone    = var.zone
 }
 
-resource "tls_private_key" "my_ssh_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
+resource "google_compute_instance_template" "apache_template" {
+  name_prefix = "apache-template"
+  machine_type = "e2-micro"
 
-resource "google_compute_instance_template" "default" {
-  name_prefix  = "apache-template"
-  machine_type = "e2-medium"
-
-  tags = ["http-server"]
+  tags = ["apache"]
 
   disk {
-    source_image = "debian-cloud/debian-11"
+    source_image = "debian-cloud/debian-12"
     auto_delete  = true
     boot         = true
   }
 
   network_interface {
-    network       = "default"
+    network = "default"
     access_config {}
   }
 
-  metadata = {
-    ssh-keys = "ansible:${tls_private_key.my_ssh_key.public_key_openssh}"
-  }
+  metadata_startup_script = file("startup.sh")
 
-  lifecycle {
-    create_before_destroy = true
+  service_account {
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 }
 
-resource "google_compute_health_check" "default" {
-  name               = "apache-health-check"
-  check_interval_sec = 10
-  timeout_sec        = 5
-
-  http_health_check {
-    port = 80
-  }
-}
-
-resource "google_compute_region_instance_group_manager" "default" {
+resource "google_compute_instance_group_manager" "apache_mig" {
   name               = "apache-mig"
-  base_instance_name = "apache-instance"
-  region             = var.region
-
+  base_instance_name = "apache"
   version {
-    instance_template = google_compute_instance_template.default.id
+    instance_template = google_compute_instance_template.apache_template.id
   }
-
   target_size = 2
 
   auto_healing_policies {
-    health_check      = google_compute_health_check.default.id
-    initial_delay_sec = 300
+    health_check      = google_compute_health_check.apache_check.id
+    initial_delay_sec = 60
   }
 }
 
-resource "google_compute_region_autoscaler" "default" {
-  name   = "mig-autoscaler"
-  region = var.region
-  target = google_compute_region_instance_group_manager.default.id
+resource "google_compute_autoscaler" "apache_autoscaler" {
+  name   = "apache-autoscaler"
+  target = google_compute_instance_group_manager.apache_mig.id
 
   autoscaling_policy {
     max_replicas    = 5
-    min_replicas    = 2
+    min_replicas    = 1
     cooldown_period = 60
 
     cpu_utilization {
@@ -78,35 +57,14 @@ resource "google_compute_region_autoscaler" "default" {
   }
 }
 
-resource "google_compute_backend_service" "default" {
-  name                            = "apache-backend-service"
-  protocol                        = "HTTP"
-  port_name                       = "http"
-  timeout_sec                     = 10
-  load_balancing_scheme           = "EXTERNAL"
-  connection_draining_timeout_sec = 0
+resource "google_compute_health_check" "apache_check" {
+  name               = "apache-health-check"
+  check_interval_sec = 5
+  timeout_sec        = 5
+  healthy_threshold  = 2
+  unhealthy_threshold = 3
 
-  health_checks = [google_compute_health_check.default.self_link]
-
-  backend {
-    group = google_compute_region_instance_group_manager.default.instance_group
+  http_health_check {
+    port = 80
   }
-}
-
-resource "google_compute_url_map" "default" {
-  name            = "apache-url-map"
-  default_service = google_compute_backend_service.default.self_link
-}
-
-resource "google_compute_target_http_proxy" "default" {
-  name    = "apache-http-proxy"
-  url_map = google_compute_url_map.default.id
-}
-
-resource "google_compute_global_forwarding_rule" "default" {
-  name                  = "apache-forwarding-rule"
-  target                = google_compute_target_http_proxy.default.id
-  port_range            = "80"
-  load_balancing_scheme = "EXTERNAL"
-  ip_protocol           = "TCP"
 }
