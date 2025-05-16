@@ -33,6 +33,11 @@ resource "google_compute_instance_template" "default" {
     network = "default"
     access_config {}
   }
+  
+  lifecycle {
+  create_before_destroy = true
+}
+
 
   metadata_startup_script = <<-EOT
     sudo apt update
