@@ -59,12 +59,21 @@ resource "google_compute_autoscaler" "apache_autoscaler" {
 
 
 resource "google_compute_instance_template" "default" {
-  name         = "example-template"
+  name         = "my-instance-template"
   machine_type = "e2-medium"
-  project      = var.project_id
   region       = var.region
-  ...
+
+  disk {
+    source_image = "debian-cloud/debian-11"
+    auto_delete  = true
+    boot         = true
+  }
+
+  network_interface {
+    network = "default"
+  }
 }
+
 
 
 resource "google_compute_health_check" "apache_check" {
